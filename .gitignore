@@ -5,3 +5,7 @@ __dummy.html
 *.obj
 __test__*__
 *.selections.json
+*.suo
+*.sln
+*.pdb
+*.exe

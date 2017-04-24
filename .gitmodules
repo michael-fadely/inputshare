@@ -1,0 +1,3 @@
+[submodule "libxdo-d"]
+	path = libxdo-d
+	url = https://github.com/SonicFreak94/libxdo-d.git

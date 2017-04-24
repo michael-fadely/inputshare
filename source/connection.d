@@ -1,0 +1,240 @@
+module connection;
+
+import std.exception;
+import std.socket;
+import std.algorithm;
+import std.array;
+import std.concurrency;
+import core.time;
+
+debug import std.stdio : stdout, stderr;
+
+import util;
+import buttons;
+import listener;
+import packet;
+import socket;
+
+// TODO: wheel
+enum MessageType : ubyte
+{
+	None,
+	ButtonDown,
+	ButtonUp,
+	MouseMove,
+	MouseSet,
+	GiveControl,
+}
+
+struct Message
+{
+	MessageType type;
+	VirtualButton button;
+	Direction direction;
+	Vector2!int mouse;
+	Vector2!double mouseRatio;
+}
+
+class Connections
+{
+private:
+	Object sync   = new Object();
+	SocketSet set = new SocketSet();
+	Packet packet = new Packet();
+	Socket[] sockets;
+
+public:
+	@property auto count() { return sockets.length; }
+
+	void add(Socket socket)
+	{
+		enforce(socket.isAlive, "Socket is dead!");
+
+		synchronized (sync)
+		{
+			sockets ~= socket;
+		}
+	}
+
+	void giveControl(in Vector2!double screenRatio, Direction dir)
+	{
+		synchronized (sync)
+		{
+			if (sockets.empty)
+			{
+				return;
+			}
+
+			packet.put(MessageType.GiveControl);
+			packet.put(dir);
+			packet.put(screenRatio.x);
+			packet.put(screenRatio.y);
+		}
+	}
+
+	void button(bool pressed, VirtualButton button)
+	{
+		synchronized (sync)
+		{
+			if (sockets.empty)
+			{
+				return;
+			}
+
+			with (MessageType) packet.put(pressed ? ButtonDown : ButtonUp);
+			packet.put(button);
+		}
+	}
+
+	void mouseMove(int dx, int dy)
+	{
+		synchronized (sync)
+		{
+			if (sockets.empty)
+			{
+				return;
+			}
+
+			if (!dx && !dy)
+			{
+				return;
+			}
+
+			packet.put(MessageType.MouseMove);
+			packet.put(dx);
+			packet.put(dy);
+		}
+	}
+
+	void mouseSet(int x, int y)
+	{
+		synchronized (sync)
+		{
+			if (sockets.empty)
+			{
+				return;
+			}
+
+			packet.put(MessageType.MouseSet);
+			packet.put(x);
+			packet.put(y);
+		}
+	}
+
+	void finalize()
+	{
+		synchronized (sync)
+		{
+			if (sockets.empty || packet.empty)
+			{
+				return;
+			}
+
+			//debug stdout.writeln("Finalizing: ", packet.size);
+
+			Socket[] failed;
+			foreach (socket; sockets)
+			{
+				auto n = socket.send(packet.data);
+				if (!n || n == Socket.ERROR)
+				{
+					failed ~= socket;
+				}
+			}
+
+			if (!failed.empty)
+			{
+				debug stdout.writeln("Lost connection to some sockets or something");
+				foreach (socket; failed)
+				{
+					socket.disconnect();
+					sockets = sockets.remove!(x => x is socket);
+				}
+			}
+
+			packet.clear();
+		}
+	}
+
+	Generator!(Message) read()
+	{
+		synchronized (sync)
+		{
+			return new Generator!(Message)(
+			{
+				if (sockets.empty)
+				{
+					return;
+				}
+
+				sockets.each!(x => set.add(x));
+				Socket.select(set, null, null, 1.msecs);
+			
+				Socket[] failed;
+
+				foreach (socket; sockets)
+				{
+					if (!set.isSet(socket))
+					{
+						continue;
+					}
+
+					MessageType type;
+					int mouse;
+
+				read_loop:
+					for (ptrdiff_t n = socket.read(type); n != 0; n = socket.read(type))
+					{
+						if (n == Socket.ERROR)
+						{
+							failed ~= socket;
+							continue;
+						}
+
+						if (!n)
+						{
+							continue;
+						}
+
+						Message message;
+						message.type = type;
+
+						switch (message.type) with (MessageType)
+						{
+							case ButtonDown:
+							case ButtonUp:
+								socket.read(message.button);
+								break;
+
+							case MouseMove:
+							case MouseSet:
+								socket.read(message.mouse.x);
+								socket.read(message.mouse.y);
+								break;
+
+							case GiveControl:
+								socket.read(message.direction);
+								socket.read(message.mouseRatio.x);
+								socket.read(message.mouseRatio.y);
+								break;
+
+							default:
+								break read_loop;
+						}
+
+						debug stdout.writeln("Received message type: ", type);
+						yield(message);
+					}
+				}
+
+				foreach (socket; failed)
+				{
+					debug stdout.writeln("Lost connection to some sockets or something");
+
+					socket.disconnect();
+					sockets = sockets.remove!(x => x is socket);
+				}
+			});
+		}
+	}
+}

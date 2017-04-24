@@ -1,12 +1,7 @@
 {
 	"name": "inputshare",
-	"authors": [
-		"Michael Fadely"
-	],
-	"dependencies": {
-		"libxdo-d": "~>1.0.0"
-	},
+	"authors": [ "Michael Fadely" ],
 	"description": "Minimal alternative to Synergy.",
-	"copyright": "Copyright © 2017, Michael",
+	"copyright": "Copyright © 2017, Michael Fadely",
 	"license": "MIT"
 }
