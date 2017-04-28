@@ -175,25 +175,21 @@ public:
 						break;
 
 					case WM_MOUSEMOVE:
-						//debug stdout.writeln("WM_MOUSEMOVE");
-						bool send = !simulating && isSending;
-
-						//POINT p;
-						//GetCursorPos(&p);
 						POINT p = llMouse.pt;
 
-						auto x = p.x;
-						auto y = p.y;
-						auto dx = mouse.x - x;
-						auto dy = mouse.y - y;
+						auto x = llMouse.pt.x;
+						auto y = llMouse.pt.y;
+						auto dx = x - mouse.x;
+						auto dy = y - mouse.y;
 
-						if (!dx && !dy)
+						if (!simulating)
 						{
-							break;
-						}
+							POINT pt;
+							GetCursorPos(&pt);
 
-						mouse.x = x;
-						mouse.y = y;
+							mouse.x = pt.x;
+							mouse.y = pt.y;
+						}
 
 						x -= screenLeft;
 						y -= screenTop;
@@ -206,15 +202,16 @@ public:
 								{
 									//debug stdout.writeln("taking");
 									isSending = true;
-									connections.takeControl(screenRatio, getMouseDirection(x,
-											y, screenWidth, screenHeight));
+									connections.takeControl(screenRatio,
+										getMouseDirection(x, y, screenWidth, screenHeight));
 								}
 							}
 							else if (isReceiving)
 							{
 								//debug stdout.writeln("giving");
-								connections.giveControl(screenRatio, getMouseDirection(x, y,
-										screenWidth, screenHeight));
+								connections.giveControl(screenRatio,
+									getMouseDirection(x, y, screenWidth, screenHeight));
+
 								isReceiving = false;
 							}
 						}
