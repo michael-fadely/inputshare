@@ -44,19 +44,25 @@ Direction getMouseDirection(int x, int y, int width, int height)
 
 version (Windows)
 {
-	void setMousePosition(int x, int y, bool absolute) nothrow
+	void moveCursor(int dx, int dy)
+	{
+		INPUT input;
+
+		input.type       = INPUT_MOUSE;
+		input.mi.dwFlags = MOUSEEVENTF_MOVE;
+		input.mi.dx      = dx;
+		input.mi.dy      = dy;
+
+		SendInput(1, &input, input.sizeof);	}
+
+	void setCursorPosition(int x, int y, int width, int height) nothrow
 	{
 		INPUT input;
 		
-		if (absolute)
-		{
-			input.mi.dwFlags |= MOUSEEVENTF_ABSOLUTE;
-		}
-
 		input.type       = INPUT_MOUSE;
-		input.mi.dx      = x;
-		input.mi.dy      = y;
-		input.mi.dwFlags |= MOUSEEVENTF_MOVE;
+		input.mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
+		input.mi.dx      = cast(LONG)(ushort.max * (x / cast(double)width));
+		input.mi.dy      = cast(LONG)(ushort.max * (y / cast(double)height));
 
 		SendInput(1, &input, input.sizeof);
 	}

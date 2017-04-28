@@ -175,14 +175,12 @@ public:
 						break;
 
 					case WM_MOUSEMOVE:
-						POINT p = llMouse.pt;
-
 						auto x = llMouse.pt.x;
 						auto y = llMouse.pt.y;
 						auto dx = x - mouse.x;
 						auto dy = y - mouse.y;
 
-						if (!simulating)
+						//if (!simulating)
 						{
 							POINT pt;
 							GetCursorPos(&pt);
@@ -208,7 +206,7 @@ public:
 							}
 							else if (isReceiving)
 							{
-								//debug stdout.writeln("giving");
+								debug stdout.writeln("giving");
 								connections.giveControl(screenRatio,
 									getMouseDirection(x, y, screenWidth, screenHeight));
 
@@ -381,7 +379,7 @@ private:
 			y += margin;
 		}
 
-		setMousePosition(x, y, true);
+		setCursorPosition(x, y, screenWidth, screenHeight);
 	}
 
 	void run()
@@ -459,11 +457,11 @@ private:
 						break;
 
 					case MouseSet:
-						setMousePosition(message.mouse.x, message.mouse.y, true);
+						setCursorPosition(message.mouse.x, message.mouse.y, screenWidth, screenHeight);
 						break;
 
 					case MouseMove:
-						setMousePosition(message.mouse.x, message.mouse.y, false);
+						moveCursor(message.mouse.x, message.mouse.y);
 						break;
 
 					default:

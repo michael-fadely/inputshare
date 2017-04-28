@@ -244,7 +244,7 @@ public:
 								break read_loop;
 						}
 
-						debug stdout.writeln("Received message type: ", type);
+						//debug stdout.writeln("Received message type: ", type);
 						yield(message);
 					}
 				}
