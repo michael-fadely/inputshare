@@ -106,13 +106,15 @@ version (Windows)
 		INPUT input;
 	
 		auto nativeKey = button.toNative();
-		input.type     = INPUT_KEYBOARD;
-		input.ki.wScan = cast(WORD)MapVirtualKey(nativeKey, MAPVK_VK_TO_VSC);
 
+		input.type       = INPUT_KEYBOARD;
+		input.ki.wScan   = cast(WORD)MapVirtualKey(nativeKey, MAPVK_VK_TO_VSC);
 		input.ki.dwFlags = KEYEVENTF_SCANCODE;
 
 		if ((nativeKey > 32 && nativeKey < 47) || (nativeKey > 90 && nativeKey < 94))
+		{
 			input.ki.dwFlags |= KEYEVENTF_EXTENDEDKEY;
+		}
 
 		if (!down)
 		{

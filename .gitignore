@@ -9,3 +9,4 @@ __test__*__
 *.sln
 *.pdb
 *.exe
+*.exe_cv

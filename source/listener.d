@@ -20,9 +20,15 @@ class Listener : Thread
 {
 private:
 	Connections connections;
-	bool forwardInput;
+
+	bool isSending;
+	bool isReceiving;
+
 	bool simulating;
 	int screenLeft, screenTop, screenWidth, screenHeight;
+
+	Vector2!int mouse;
+	Vector2!double screenRatio;
 
 	version (Windows)
 	{
@@ -38,12 +44,10 @@ private:
 		HookProc keyboardHook, mouseHook;
 		MonitorCallback monitorCallback;
 
-		Vector2!int mouse;
 	}
 
 public:
-	this(Connections connections, KeyboardHook keyboardHook, MouseHook mouseHook,
-			MonitorCallback monitorCallback)
+	this(Connections connections, KeyboardHook keyboardHook, MouseHook mouseHook, MonitorCallback monitorCallback)
 	{
 		super(&run);
 
@@ -69,6 +73,8 @@ public:
 		{
 			PostThreadMessage(id, WM_QUIT, 0, 0);
 		}
+
+		join(true);
 	}
 
 	version (Windows)
@@ -90,66 +96,64 @@ public:
 						break;
 
 					case WM_KEYDOWN:
-						if (forwardInput)
+						if (isSending)
 						{
 							connections.button(true, fromNative(keyboard.vkCode));
 						}
 						break;
 
 					case WM_KEYUP:
-						if (forwardInput)
+						if (isSending)
 						{
 							connections.button(false, fromNative(keyboard.vkCode));
 						}
 						break;
 
 					case WM_SYSKEYDOWN:
-						if (forwardInput)
+						if (isSending)
 						{
 							connections.button(true, fromNative(keyboard.vkCode));
 						}
 						break;
 
 					case WM_SYSKEYUP:
-						if (forwardInput)
+						if (isSending)
 						{
 							connections.button(false, fromNative(keyboard.vkCode));
 						}
 						break;
 				}
-
-				connections.finalize();
 			}
 			catch (Exception ex)
 			{
-				try
+				debug
 				{
-					//stderr.writeln(ex.msg);
+					try
+					{
+						stderr.writeln(ex.msg);
+					}
+					catch (Exception)
+					{
+						// ignored
+					}
 				}
-				catch (Exception)
-				{
-					// ignored
-				}
-			}
 
-			if (nCode < 0)
-			{
 				return CallNextHookEx(null, nCode, wParam, lParam);
 			}
 
-			return forwardInput ? 1 : 0;
+			return isSending && nCode >= 0 ? 1 : CallNextHookEx(null, nCode, wParam, lParam);
 		}
 
 		LRESULT runMouseHook(int nCode, WPARAM wParam, LPARAM lParam) nothrow
 		{
 			try
 			{
-				if (simulating || connections.count == 0)
+				if (connections.count == 0)
 				{
 					return CallNextHookEx(null, nCode, wParam, lParam);
 				}
 
-				//auto llMouse = cast(MSLLHOOKSTRUCT*)lParam;
+				auto llMouse = cast(MSLLHOOKSTRUCT*)lParam;
 
 				switch (wParam)
 				{
@@ -157,27 +161,36 @@ public:
 						break;
 
 					case WM_LBUTTONDOWN:
-						if (forwardInput)
+						if (!simulating && isSending)
 						{
 							connections.button(true, VK_LBUTTON);
 						}
 						break;
 
 					case WM_LBUTTONUP:
-						if (forwardInput)
+						if (!simulating && isSending)
 						{
 							connections.button(false, VK_LBUTTON);
 						}
 						break;
 
 					case WM_MOUSEMOVE:
-						POINT p;
-						GetCursorPos(&p);
+						//debug stdout.writeln("WM_MOUSEMOVE");
+						bool send = !simulating && isSending;
+
+						//POINT p;
+						//GetCursorPos(&p);
+						POINT p = llMouse.pt;
 
 						auto x = p.x;
 						auto y = p.y;
 						auto dx = mouse.x - x;
 						auto dy = mouse.y - y;
+
+						if (!dx && !dy)
+						{
+							break;
+						}
 
 						mouse.x = x;
 						mouse.y = y;
@@ -185,24 +198,31 @@ public:
 						x -= screenLeft;
 						y -= screenTop;
 
-						if (!forwardInput && isOffScreen(x, y, MARGIN))
+						if (isOffScreen(x, y, MARGIN))
 						{
-							forwardInput = true;
-
-							Vector2!double ratio;
-							ratio.x = 0.0;
-							ratio.y = 0.0;
-
-							getScreenRatio(ratio);
-							connections.giveControl(ratio, getMouseDirection(x, y,
-									screenWidth, screenHeight));
+							if (!simulating && !isSending)
+							{
+								if (!isReceiving)
+								{
+									//debug stdout.writeln("taking");
+									isSending = true;
+									connections.takeControl(screenRatio, getMouseDirection(x,
+											y, screenWidth, screenHeight));
+								}
+							}
+							else if (isReceiving)
+							{
+								//debug stdout.writeln("giving");
+								connections.giveControl(screenRatio, getMouseDirection(x, y,
+										screenWidth, screenHeight));
+								isReceiving = false;
+							}
 						}
 
-						if (forwardInput)
+						if (!simulating && isSending)
 						{
 							connections.mouseMove(dx, dy);
 						}
-
 						break;
 
 					case WM_MOUSEWHEEL: // TODO
@@ -213,28 +233,28 @@ public:
 						break;
 
 					case WM_RBUTTONDOWN:
-						if (forwardInput)
+						if (!simulating && isSending)
 						{
 							connections.button(true, VK_RBUTTON);
 						}
 						break;
 
 					case WM_RBUTTONUP:
-						if (forwardInput)
+						if (!simulating && isSending)
 						{
 							connections.button(false, VK_RBUTTON);
 						}
 						break;
 
 					case WM_MBUTTONDOWN:
-						if (forwardInput)
+						if (!simulating && isSending)
 						{
 							connections.button(true, VK_MBUTTON);
 						}
 						break;
 
 					case WM_MBUTTONUP:
-						if (forwardInput)
+						if (!simulating && isSending)
 						{
 							connections.button(false, VK_MBUTTON);
 						}
@@ -249,20 +269,25 @@ public:
 					case WM_XBUTTONDBLCLK: // TODO?
 						break;
 				}
-
-				connections.finalize();
 			}
 			catch (Exception ex)
 			{
-				// ignored
-			}
+				debug
+				{
+					try
+					{
+						stderr.writeln(ex.msg);
+					}
+					catch (Exception)
+					{
+						// ignored
+					}
+				}
 
-			if (nCode < 0)
-			{
 				return CallNextHookEx(null, nCode, wParam, lParam);
 			}
 
-			return forwardInput ? 1 : 0;
+			return isSending && nCode >= 0 ? 1 : CallNextHookEx(null, nCode, wParam, lParam);
 		}
 
 		BOOL screenRatioFromCursor(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) nothrow
@@ -295,9 +320,9 @@ public:
 			}
 		}
 
-		auto getScreenRatio(ref Vector2!double thing)
+		auto getScreenRatio()
 		{
-			return EnumDisplayMonitors(null, null, monitorCallback, cast(LPARAM)&thing);
+			return EnumDisplayMonitors(null, null, monitorCallback, cast(LPARAM)&screenRatio);
 		}
 	}
 
@@ -315,7 +340,7 @@ private:
 
 	bool isOffScreen(int x, int y, int margin) nothrow
 	{
-		return ((x > (screenWidth - margin)) || (x < margin)); // return ((x > (screenWidth - margin)) || (x < margin)) || ((y > (screenHeight - margin)) || (y < margin));
+		return ((x > (screenWidth - margin)) || (x < margin));
 	}
 
 	void pressButton(in Message message) nothrow
@@ -332,6 +357,36 @@ private:
 		}
 	}
 
+	private void displaySwitchCursor(in Message message)
+	{
+		updateScreenMetrics();
+
+		const margin = (MARGIN + 1);
+
+		auto x = cast(int)(screenLeft + (screenWidth - (message.mouseRatio.x * screenWidth)));
+		auto y = cast(int)(screenTop + (screenHeight - (message.mouseRatio.y * screenHeight)));
+
+		if (message.direction & Direction.Left)
+		{
+			x -= margin;
+		}
+		else
+		{
+			x += margin;
+		}
+
+		if (message.direction & Direction.Up)
+		{
+			y -= margin;
+		}
+		else
+		{
+			y += margin;
+		}
+
+		setMousePosition(x, y, true);
+	}
+
 	void run()
 	{
 		version (Windows)
@@ -346,21 +401,24 @@ private:
 			GetCursorPos(&point);
 			mouse.x = point.x;
 			mouse.y = point.y;
+		}
 
-			updateScreenMetrics();
+		updateScreenMetrics();
 
-			bool quit;
-			MSG msg;
+		bool quit;
+		while (!quit)
+		{
+			simulating = false;
 
-			while (!quit)
+			// Windows message queue dispatching
+			version (Windows)
 			{
-				simulating = false;
-
 				// TODO: VK_PACKET
+				MSG msg;
 				if (PeekMessage(&msg, null, 0, 0, 0))
 				{
-					for (int result = GetMessage(&msg, null, 0, 0); result != 0; result = GetMessage(&msg,
-							null, 0, 0))
+					int result;
+					while ((result = GetMessage(&msg, null, 0, 0)) != 0)
 					{
 						if (msg.message == WM_QUIT)
 						{
@@ -369,67 +427,60 @@ private:
 
 						TranslateMessage(&msg);
 						DispatchMessage(&msg);
+						connections.finalize();
 					}
 				}
-
-				simulating = true;
-
-				foreach (Message message; connections.read())
-				{
-					switch (message.type) with (MessageType)
-					{
-						case GiveControl:
-							forwardInput = false;
-							updateScreenMetrics();
-
-							const margin = (MARGIN + 1);
-
-							auto x = cast(int)(screenLeft + (screenWidth - (message.mouseRatio.x * screenWidth)));
-							auto y = cast(int)(screenTop + (screenHeight - (message.mouseRatio.y * screenHeight)));
-
-							if (message.direction & Direction.Left)
-							{
-								x -= margin;
-							}
-							else
-							{
-								x += margin;
-							}
-
-							if (message.direction & Direction.Up)
-							{
-								y -= margin;
-							}
-							else
-							{
-								y += margin;
-							}
-
-							setMousePosition(x, y, true);
-							break;
-
-						case ButtonDown:
-							case ButtonUp:
-							pressButton(message);
-							break;
-
-						case MouseSet:
-							setMousePosition(message.mouse.x, message.mouse.y, true);
-							break;
-
-						case MouseMove:
-							setMousePosition(message.mouse.x, message.mouse.y, false);
-							break;
-
-						default:
-							continue;
-					}
-				}
-
-				yield();
-				sleep(1.msecs);
 			}
 
+			connections.finalize();
+			simulating = true;
+
+			screenRatio.x = 0.0;
+			screenRatio.y = 0.0;
+			getScreenRatio();
+
+			foreach (Message message; connections.read())
+			{
+				switch (message.type) with (MessageType)
+				{
+					// A machine is taking control of this client.
+					case TakeControl:
+						isReceiving = true;
+						displaySwitchCursor(message);
+						break;
+
+					// A machine which is under control of another is restoring
+					// input to its controller.
+					case GiveControl:
+						isSending = false;
+						displaySwitchCursor(message);
+						break;
+
+					case ButtonDown:
+						case ButtonUp:
+						pressButton(message);
+						break;
+
+					case MouseSet:
+						setMousePosition(message.mouse.x, message.mouse.y, true);
+						break;
+
+					case MouseMove:
+						setMousePosition(message.mouse.x, message.mouse.y, false);
+						break;
+
+					default:
+						debug stderr.writeln("unknown message type???");
+						break;
+				}
+			}
+
+			yield();
+			sleep(1.msecs);
+		}
+
+		version (Windows)
+		{
 			UnhookWindowsHookEx(keyboardHookLL);
 			UnhookWindowsHookEx(mouseHookLL);
 		}

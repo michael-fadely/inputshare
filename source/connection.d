@@ -23,6 +23,7 @@ enum MessageType : ubyte
 	ButtonUp,
 	MouseMove,
 	MouseSet,
+	TakeControl,
 	GiveControl,
 }
 
@@ -44,7 +45,7 @@ private:
 	Socket[] sockets;
 
 public:
-	@property auto count() { return sockets.length; }
+	@property auto count() { synchronized (sync) return sockets.length; }
 
 	void add(Socket socket)
 	{
@@ -66,10 +67,29 @@ public:
 			}
 
 			packet.put(MessageType.GiveControl);
-			packet.put(dir);
-			packet.put(screenRatio.x);
-			packet.put(screenRatio.y);
+			sendDirAndRatio(screenRatio, dir);
 		}
+	}
+
+	void takeControl(in Vector2!double screenRatio, Direction dir)
+	{
+		synchronized (sync)
+		{
+			if (sockets.empty)
+			{
+				return;
+			}
+
+			packet.put(MessageType.TakeControl);
+			sendDirAndRatio(screenRatio, dir);
+		}
+	}
+
+	private void sendDirAndRatio(in Vector2!double screenRatio, Direction dir)
+	{
+		packet.put(dir);
+		packet.put(screenRatio.x);
+		packet.put(screenRatio.y);
 	}
 
 	void button(bool pressed, VirtualButton button)
@@ -130,8 +150,6 @@ public:
 				return;
 			}
 
-			//debug stdout.writeln("Finalizing: ", packet.size);
-
 			Socket[] failed;
 			foreach (socket; sockets)
 			{
@@ -187,13 +205,15 @@ public:
 					{
 						if (n == Socket.ERROR)
 						{
+							debug stdout.writeln("error");
 							failed ~= socket;
-							continue;
+							break;
 						}
 
 						if (!n)
 						{
-							continue;
+							debug stdout.writeln("!n");
+							break;
 						}
 
 						Message message;
@@ -212,6 +232,7 @@ public:
 								socket.read(message.mouse.y);
 								break;
 
+							case TakeControl:
 							case GiveControl:
 								socket.read(message.direction);
 								socket.read(message.mouseRatio.x);
@@ -219,6 +240,7 @@ public:
 								break;
 
 							default:
+								debug stdout.writeln("default");
 								break read_loop;
 						}
 
