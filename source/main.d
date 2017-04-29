@@ -23,17 +23,50 @@ version (Windows)
 {
 	import core.sys.windows.windows;
 
-	extern (Windows) LRESULT KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) nothrow
+extern (Windows):
+	LRESULT KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) nothrow
 	{
-		return ioListener.runKeyboardHook(nCode, wParam, lParam);
+		try
+		{
+			return ioListener.runKeyboardHook(nCode, wParam, lParam);
+		}
+		catch (Exception ex)
+		{
+			try
+			{
+				stderr.writeln(ex);
+			}
+			catch (Exception)
+			{
+				// ignored
+			}
+
+			return CallNextHookEx(null, nCode, wParam, lParam);
+		}
 	}
 
-	extern (Windows) LRESULT MouseProc(int nCode, WPARAM wParam, LPARAM lParam) nothrow
+	LRESULT MouseProc(int nCode, WPARAM wParam, LPARAM lParam) nothrow
 	{
-		return ioListener.runMouseHook(nCode, wParam, lParam);
+		try
+		{
+			return ioListener.runMouseHook(nCode, wParam, lParam);
+		}
+		catch (Exception ex)
+		{
+			try
+			{
+				stderr.writeln(ex);
+			}
+			catch (Exception)
+			{
+				// ignored
+			}
+
+			return CallNextHookEx(null, nCode, wParam, lParam);
+		}
 	}
 
-	extern (Windows) BOOL ScreenRatioFromCursor(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) nothrow
+	BOOL ScreenRatioFromCursor(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) nothrow
 	{
 		return ioListener.screenRatioFromCursor(hMonitor, hdcMonitor, lprcMonitor, dwData);
 	}

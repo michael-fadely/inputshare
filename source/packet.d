@@ -28,7 +28,7 @@ public:
 
 	void put(T)(T value)
 	{
-		ubyte[] b = (cast(ubyte*)&value)[0 .. T.sizeof];
+		auto b = (cast(ubyte*)&value)[0 .. T.sizeof].idup;
 		buffer.put(b);
 		_size += T.sizeof;
 	}

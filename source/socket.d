@@ -19,7 +19,6 @@ template read(T)
 
 		static if (is(T : ubyte) || is(t == ubyte) || is(T : byte) || is(t == byte))
 		{
-			debug pragma(msg, __FUNCTION__ ~ ": byte type");
 			value = cast(T)buffer[0];
 		}
 		else

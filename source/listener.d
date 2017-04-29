@@ -79,209 +79,173 @@ public:
 
 	version (Windows)
 	{
-		LRESULT runKeyboardHook(int nCode, WPARAM wParam, LPARAM lParam) nothrow
+		LRESULT runKeyboardHook(int nCode, WPARAM wParam, LPARAM lParam) 
 		{
-			try
+			if (simulating || connections.count == 0)
 			{
-				if (simulating || connections.count == 0)
-				{
-					return CallNextHookEx(null, nCode, wParam, lParam);
-				}
-
-				auto keyboard = cast(KBDLLHOOKSTRUCT*)lParam;
-
-				switch (wParam)
-				{
-					default:
-						break;
-
-					case WM_KEYDOWN:
-						if (isSending)
-						{
-							connections.button(true, fromNative(keyboard.vkCode));
-						}
-						break;
-
-					case WM_KEYUP:
-						if (isSending)
-						{
-							connections.button(false, fromNative(keyboard.vkCode));
-						}
-						break;
-
-					case WM_SYSKEYDOWN:
-						if (isSending)
-						{
-							connections.button(true, fromNative(keyboard.vkCode));
-						}
-						break;
-
-					case WM_SYSKEYUP:
-						if (isSending)
-						{
-							connections.button(false, fromNative(keyboard.vkCode));
-						}
-						break;
-				}
-			}
-			catch (Exception ex)
-			{
-				debug
-				{
-					try
-					{
-						stderr.writeln(ex.msg);
-					}
-					catch (Exception)
-					{
-						// ignored
-					}
-				}
-
 				return CallNextHookEx(null, nCode, wParam, lParam);
+			}
+
+			auto keyboard = *cast(KBDLLHOOKSTRUCT*)lParam;
+
+			switch (wParam)
+			{
+				default:
+					break;
+
+				case WM_KEYDOWN:
+					if (isSending)
+					{
+						connections.button(true, fromNative(keyboard.vkCode));
+					}
+					break;
+
+				case WM_KEYUP:
+					if (isSending)
+					{
+						connections.button(false, fromNative(keyboard.vkCode));
+					}
+					break;
+
+				case WM_SYSKEYDOWN:
+					if (isSending)
+					{
+						connections.button(true, fromNative(keyboard.vkCode));
+					}
+					break;
+
+				case WM_SYSKEYUP:
+					if (isSending)
+					{
+						connections.button(false, fromNative(keyboard.vkCode));
+					}
+					break;
 			}
 
 			return isSending && nCode >= 0 ? 1 : CallNextHookEx(null, nCode, wParam, lParam);
 		}
 
-		LRESULT runMouseHook(int nCode, WPARAM wParam, LPARAM lParam) nothrow
+		LRESULT runMouseHook(int nCode, WPARAM wParam, LPARAM lParam)
 		{
-			try
+			if (connections.count == 0)
 			{
-				if (connections.count == 0)
-				{
-					return CallNextHookEx(null, nCode, wParam, lParam);
-				}
-
-				auto llMouse = cast(MSLLHOOKSTRUCT*)lParam;
-
-				switch (wParam)
-				{
-					default:
-						break;
-
-					case WM_LBUTTONDOWN:
-						if (!simulating && isSending)
-						{
-							connections.button(true, VK_LBUTTON);
-						}
-						break;
-
-					case WM_LBUTTONUP:
-						if (!simulating && isSending)
-						{
-							connections.button(false, VK_LBUTTON);
-						}
-						break;
-
-					case WM_MOUSEMOVE:
-						auto x = llMouse.pt.x;
-						auto y = llMouse.pt.y;
-						auto dx = x - mouse.x;
-						auto dy = y - mouse.y;
-
-						//if (!simulating)
-						{
-							POINT pt;
-							GetCursorPos(&pt);
-
-							mouse.x = pt.x;
-							mouse.y = pt.y;
-						}
-
-						x -= screenLeft;
-						y -= screenTop;
-
-						if (isOffScreen(x, y, MARGIN))
-						{
-							if (!simulating && !isSending)
-							{
-								if (!isReceiving)
-								{
-									//debug stdout.writeln("taking");
-									isSending = true;
-									connections.takeControl(screenRatio,
-										getMouseDirection(x, y, screenWidth, screenHeight));
-								}
-							}
-							else if (isReceiving)
-							{
-								debug stdout.writeln("giving");
-								connections.giveControl(screenRatio,
-									getMouseDirection(x, y, screenWidth, screenHeight));
-
-								isReceiving = false;
-							}
-						}
-
-						if (!simulating && isSending)
-						{
-							connections.mouseMove(dx, dy);
-						}
-						break;
-
-					case WM_MOUSEWHEEL: // TODO
-						break;
-
-						// horizontal wheel
-					case 0x020E: // TODO
-						break;
-
-					case WM_RBUTTONDOWN:
-						if (!simulating && isSending)
-						{
-							connections.button(true, VK_RBUTTON);
-						}
-						break;
-
-					case WM_RBUTTONUP:
-						if (!simulating && isSending)
-						{
-							connections.button(false, VK_RBUTTON);
-						}
-						break;
-
-					case WM_MBUTTONDOWN:
-						if (!simulating && isSending)
-						{
-							connections.button(true, VK_MBUTTON);
-						}
-						break;
-
-					case WM_MBUTTONUP:
-						if (!simulating && isSending)
-						{
-							connections.button(false, VK_MBUTTON);
-						}
-						break;
-
-					case WM_XBUTTONDOWN: // TODO
-						break;
-
-					case WM_XBUTTONUP: // TODO
-						break;
-
-					case WM_XBUTTONDBLCLK: // TODO?
-						break;
-				}
-			}
-			catch (Exception ex)
-			{
-				debug
-				{
-					try
-					{
-						stderr.writeln(ex.msg);
-					}
-					catch (Exception)
-					{
-						// ignored
-					}
-				}
-
 				return CallNextHookEx(null, nCode, wParam, lParam);
 			}
 
+			auto llMouse = *cast(MSLLHOOKSTRUCT*)lParam;
+
+			switch (wParam)
+			{
+				default:
+					return CallNextHookEx(null, nCode, wParam, lParam);
+
+				case WM_LBUTTONDOWN:
+					if (!simulating && isSending)
+					{
+						connections.button(true, VK_LBUTTON);
+					}
+					break;
+
+				case WM_LBUTTONUP:
+					if (!simulating && isSending)
+					{
+						connections.button(false, VK_LBUTTON);
+					}
+					break;
+
+				case WM_MOUSEMOVE:
+					auto x = llMouse.pt.x;
+					auto y = llMouse.pt.y;
+					auto dx = x - mouse.x;
+					auto dy = y - mouse.y;
+
+					POINT pt;
+					GetCursorPos(&pt);
+
+					mouse.x = pt.x;
+					mouse.y = pt.y;
+
+					if (!dx && !dy)
+					{
+						break;
+					}
+
+					x -= screenLeft;
+					y -= screenTop;
+
+					if (isOffScreen(x, y, MARGIN))
+					{
+						if (!simulating && !isSending)
+						{
+							if (!isReceiving)
+							{
+								//debug stdout.writeln("taking");
+								isSending = true;
+								connections.takeControl(screenRatio,
+									getMouseDirection(x, y, screenWidth, screenHeight));
+							}
+						}
+						else if (isReceiving)
+						{
+							//debug stdout.writeln("giving");
+							isReceiving = false;
+							connections.giveControl(screenRatio,
+								getMouseDirection(x, y, screenWidth, screenHeight));
+						}
+					}
+
+					if (!simulating && isSending)
+					{
+						connections.mouseMove(dx, dy);
+					}
+					break;
+
+				case WM_MOUSEWHEEL: // TODO
+					break;
+
+					// horizontal wheel
+				case 0x020E: // TODO
+					break;
+
+				case WM_RBUTTONDOWN:
+					if (!simulating && isSending)
+					{
+						connections.button(true, VK_RBUTTON);
+					}
+					break;
+
+				case WM_RBUTTONUP:
+					if (!simulating && isSending)
+					{
+						connections.button(false, VK_RBUTTON);
+					}
+					break;
+
+				case WM_MBUTTONDOWN:
+					if (!simulating && isSending)
+					{
+						connections.button(true, VK_MBUTTON);
+					}
+					break;
+
+				case WM_MBUTTONUP:
+					if (!simulating && isSending)
+					{
+						connections.button(false, VK_MBUTTON);
+					}
+					break;
+
+				case WM_XBUTTONDOWN: // TODO
+					break;
+
+				case WM_XBUTTONUP: // TODO
+					break;
+
+				case WM_XBUTTONDBLCLK: // TODO?
+					break;
+			}
+
+			connections.finalize();
 			return isSending && nCode >= 0 ? 1 : CallNextHookEx(null, nCode, wParam, lParam);
 		}
 
@@ -403,43 +367,37 @@ private:
 		bool quit;
 		while (!quit)
 		{
-			simulating = false;
-
 			// Windows message queue dispatching
 			version (Windows)
 			{
 				// TODO: VK_PACKET
 				MSG msg;
-				if (PeekMessage(&msg, null, 0, 0, 0))
-				{
-					int result;
-					while ((result = GetMessage(&msg, null, 0, 0)) != 0)
-					{
-						if (msg.message == WM_QUIT)
-						{
-							quit = true;
-						}
 
-						TranslateMessage(&msg);
-						DispatchMessage(&msg);
-						connections.finalize();
+				while (PeekMessage(&msg, null, 0, 0, 1))
+				{
+					debug stdout.writeln("message");
+					if (msg.message == WM_QUIT)
+					{
+						quit = true;
 					}
+
+					TranslateMessage(&msg);
+					DispatchMessage(&msg);
 				}
 			}
-
-			connections.finalize();
-			simulating = true;
 
 			screenRatio.x = 0.0;
 			screenRatio.y = 0.0;
 			getScreenRatio();
 
+			simulating = true;
 			foreach (Message message; connections.read())
 			{
 				switch (message.type) with (MessageType)
 				{
 					// A machine is taking control of this client.
 					case TakeControl:
+						isSending = false;
 						isReceiving = true;
 						displaySwitchCursor(message);
 						break;
@@ -452,7 +410,7 @@ private:
 						break;
 
 					case ButtonDown:
-						case ButtonUp:
+					case ButtonUp:
 						pressButton(message);
 						break;
 
@@ -469,9 +427,10 @@ private:
 						break;
 				}
 			}
+			simulating = false;
 
-			yield();
-			sleep(1.msecs);
+			super.yield();
+			super.sleep(1.msecs);
 		}
 
 		version (Windows)
