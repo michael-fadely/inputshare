@@ -179,7 +179,6 @@ public:
 						{
 							if (!isReceiving)
 							{
-								//debug stdout.writeln("taking");
 								isSending = true;
 								connections.takeControl(screenRatio,
 									getMouseDirection(x, y, screenWidth, screenHeight));
@@ -187,7 +186,6 @@ public:
 						}
 						else if (isReceiving)
 						{
-							//debug stdout.writeln("giving");
 							isReceiving = false;
 							connections.giveControl(screenRatio,
 								getMouseDirection(x, y, screenWidth, screenHeight));
@@ -200,11 +198,19 @@ public:
 					}
 					break;
 
-				case WM_MOUSEWHEEL: // TODO
+				case WM_MOUSEWHEEL:
+					if (!simulating && isSending)
+					{
+						connections.scrollVertical(HIWORD(llMouse.mouseData));
+					}
 					break;
 
 					// horizontal wheel
-				case 0x020E: // TODO
+				case 0x020E:
+					if (!simulating && isSending)
+					{
+						connections.scrollHorizontal(HIWORD(llMouse.mouseData));
+					}
 					break;
 
 				case WM_RBUTTONDOWN:
@@ -375,7 +381,6 @@ private:
 
 				while (PeekMessage(&msg, null, 0, 0, 1))
 				{
-					debug stdout.writeln("message");
 					if (msg.message == WM_QUIT)
 					{
 						quit = true;
@@ -420,6 +425,14 @@ private:
 
 					case MouseMove:
 						moveCursor(message.mouse.x, message.mouse.y);
+						break;
+
+					case ScrollVertical:
+						scrollMouseWheel(message.wheel, false);
+						break;
+
+					case ScrollHorizontal:
+						scrollMouseWheel(message.wheel, true);
 						break;
 
 					default:

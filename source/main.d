@@ -74,6 +74,8 @@ extern (Windows):
 
 int main(string[] args)
 {
+	stdout.writeln("Build: ", __TIMESTAMP__);
+
 	try
 	{
 		auto help = getopt(args,

@@ -107,6 +107,17 @@ version (Windows)
 		SendInput(1, &input, input.sizeof);
 	}
 
+	void scrollMouseWheel(short amount, bool horizontal) nothrow
+	{
+		INPUT input;
+
+		input.type         = INPUT_MOUSE;
+		input.mi.dwFlags   = horizontal ? /*MOUSEEVENTF_HWHEEL*/ 0x1000 : MOUSEEVENTF_WHEEL;
+		input.mi.mouseData = amount;
+
+		SendInput(1, &input, input.sizeof);
+	}
+
 	void pressKeyboardButton(VirtualButton button, bool down) nothrow
 	{
 		INPUT input;

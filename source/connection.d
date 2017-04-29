@@ -15,16 +15,17 @@ import listener;
 import packet;
 import socket;
 
-// TODO: wheel
 enum MessageType : ubyte
 {
 	None,
+	TakeControl,
+	GiveControl,
 	ButtonDown,
 	ButtonUp,
 	MouseMove,
 	MouseSet,
-	TakeControl,
-	GiveControl,
+	ScrollVertical,
+	ScrollHorizontal
 }
 
 struct Message
@@ -34,6 +35,7 @@ struct Message
 	Direction direction;
 	Vector2!int mouse;
 	Vector2!double mouseRatio;
+	short wheel;
 }
 
 class Connections
@@ -141,6 +143,44 @@ public:
 		}
 	}
 
+	void scrollVertical(short amount)
+	{
+		synchronized (sync)
+		{
+			if (sockets.empty)
+			{
+				return;
+			}
+
+			if (!amount)
+			{
+				return;
+			}
+
+			packet.put(MessageType.ScrollVertical);
+			packet.put(amount);
+		}
+	}
+
+	void scrollHorizontal(short amount)
+	{
+		synchronized (sync)
+		{
+			if (sockets.empty)
+			{
+				return;
+			}
+
+			if (!amount)
+			{
+				return;
+			}
+
+			packet.put(MessageType.ScrollHorizontal);
+			packet.put(amount);
+		}
+	}
+
 	void finalize()
 	{
 		synchronized (sync)
@@ -221,6 +261,13 @@ public:
 
 						switch (message.type) with (MessageType)
 						{
+							case TakeControl:
+							case GiveControl:
+								socket.read(message.direction);
+								socket.read(message.mouseRatio.x);
+								socket.read(message.mouseRatio.y);
+								break;
+
 							case ButtonDown:
 							case ButtonUp:
 								socket.read(message.button);
@@ -232,11 +279,9 @@ public:
 								socket.read(message.mouse.y);
 								break;
 
-							case TakeControl:
-							case GiveControl:
-								socket.read(message.direction);
-								socket.read(message.mouseRatio.x);
-								socket.read(message.mouseRatio.y);
+							case ScrollVertical:
+							case ScrollHorizontal:
+								socket.read(message.wheel);
 								break;
 
 							default:
