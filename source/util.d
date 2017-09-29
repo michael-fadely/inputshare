@@ -141,9 +141,9 @@ version (Windows)
 		SendInput(1, &input, input.sizeof);
 	}
 }
-else version (Linux)
+else version (Posix)
 {
-	static assert(false, "Nope.");
+	static assert(false, "look I'll get to it ok");
 }
 else
 {

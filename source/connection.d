@@ -47,7 +47,7 @@ private:
 	Socket[] sockets;
 
 public:
-	@property auto count() { synchronized (sync) return sockets.length; }
+	@property auto count() const { synchronized (sync) return sockets.length; }
 
 	void add(Socket socket)
 	{
@@ -238,7 +238,6 @@ public:
 					}
 
 					MessageType type;
-					int mouse;
 
 				read_loop:
 					for (ptrdiff_t n = socket.read(type); n != 0; n = socket.read(type))
