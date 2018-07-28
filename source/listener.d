@@ -322,7 +322,7 @@ private:
 		}
 	}
 
-	private void displaySwitchCursor(in Message message)
+	void displaySwitchCursor(in Message message)
 	{
 		updateScreenMetrics();
 

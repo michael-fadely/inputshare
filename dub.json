@@ -2,6 +2,20 @@
 	"name": "inputshare",
 	"authors": [ "Michael Fadely" ],
 	"description": "Minimal alternative to Synergy.",
-	"copyright": "Copyright © 2017, Michael Fadely",
-	"license": "MIT"
+	"copyright": "Copyright © 2018, Michael Fadely",
+	"license": "MIT",
+	"configurations":[
+		{
+			"name": "windows-build",
+			"platforms": [ "windows" ],
+			"targetType": "executable"
+		},
+		{
+			"name": "linux-build",
+			"dependencies": {
+				"libxdo-d": "~>1.0.0"
+			},
+			"platforms": [ "linux" ]
+		}
+	]
 }
