@@ -1,6 +1,13 @@
 module util;
 
-version (Windows) import core.sys.windows.windows;
+version (Windows)
+{
+	import core.sys.windows.windows;
+}
+else version (Posix)
+{
+	import xdo;
+}
 
 public import buttons;
 
@@ -42,9 +49,9 @@ Direction getMouseDirection(int x, int y, int width, int height)
 	return result;
 }
 
-version (Windows)
+void moveCursor(int dx, int dy)
 {
-	void moveCursor(int dx, int dy)
+	version (Windows)
 	{
 		INPUT input;
 
@@ -53,12 +60,24 @@ version (Windows)
 		input.mi.dx      = dx;
 		input.mi.dy      = dy;
 
-		SendInput(1, &input, input.sizeof);	}
+		SendInput(1, &input, input.sizeof);
+	}
+	else version (Posix)
+	{
+		static assert(false, "TODO");
+	}
+	else
+	{
+		static assert(false, "Platform not supported.");
+	}
+}
 
-	void setCursorPosition(int x, int y, int width, int height) nothrow
+void setCursorPosition(int x, int y, int width, int height) nothrow
+{
+	version (Windows)
 	{
 		INPUT input;
-		
+	
 		input.type       = INPUT_MOUSE;
 		input.mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
 		input.mi.dx      = cast(LONG)(ushort.max * (x / cast(double)width));
@@ -66,8 +85,19 @@ version (Windows)
 
 		SendInput(1, &input, input.sizeof);
 	}
+	else version (Posix)
+	{
+		static assert(false, "TODO");
+	}
+	else
+	{
+		static assert(false, "Platform not supported.");
+	}
+}
 
-	void pressMouseButton(VirtualButton button, bool down) nothrow
+void pressMouseButton(VirtualButton button, bool down) nothrow
+{
+	version (Windows)
 	{
 		INPUT input;
 
@@ -103,11 +133,22 @@ version (Windows)
 					break;
 			}
 		}
-	
+
 		SendInput(1, &input, input.sizeof);
 	}
+	else version (Posix)
+	{
+		static assert(false, "TODO");
+	}
+	else
+	{
+		static assert(false, "Platform not supported.");
+	}
+}
 
-	void scrollMouseWheel(short amount, bool horizontal) nothrow
+void scrollMouseWheel(short amount, bool horizontal) nothrow
+{
+	version (Windows)
 	{
 		INPUT input;
 
@@ -117,11 +158,22 @@ version (Windows)
 
 		SendInput(1, &input, input.sizeof);
 	}
+	else version (Posix)
+	{
+		static assert(false, "TODO");
+	}
+	else
+	{
+		static assert(false, "Platform not supported.");
+	}
+}
 
-	void pressKeyboardButton(VirtualButton button, bool down) nothrow
+void pressKeyboardButton(VirtualButton button, bool down) nothrow
+{
+	version (Windows)
 	{
 		INPUT input;
-	
+
 		auto nativeKey = button.toNative();
 
 		input.type       = INPUT_KEYBOARD;
@@ -137,15 +189,15 @@ version (Windows)
 		{
 			input.ki.dwFlags |= KEYEVENTF_KEYUP; // 0 indicates pressed
 		}
-	
+
 		SendInput(1, &input, input.sizeof);
 	}
-}
-else version (Posix)
-{
-	static assert(false, "look I'll get to it ok");
-}
-else
-{
-	static assert(false, "Platform not yet supported.");
+	else version (Posix)
+	{
+		static assert(false, "TODO");
+	}
+	else
+	{
+		static assert(false, "Platform not supported.");
+	}
 }

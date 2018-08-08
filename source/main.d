@@ -114,7 +114,15 @@ int main(string[] args)
 	}
 
 	auto connections = new Connections();
-	ioListener = new Listener(connections, &KeyboardProc, &MouseProc, &ScreenRatioFromCursor);
+
+	version (Windows)
+	{
+		ioListener = new Listener(connections, &KeyboardProc, &MouseProc, &ScreenRatioFromCursor);
+	}
+	else
+	{
+		ioListener = new Listener(connections);
+	}
 
 	Socket socket;
 
@@ -123,7 +131,7 @@ int main(string[] args)
 		socket = new Socket(AddressFamily.INET, SocketType.STREAM);
 		socket.blocking = true;
 
-		for (ushort i = 0; i <= bindRetry; i++)
+		for (size_t i; i <= bindRetry; i++)
 		{
 			try
 			{

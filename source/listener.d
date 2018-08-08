@@ -47,14 +47,25 @@ private:
 	}
 
 public:
-	this(Connections connections, KeyboardHook keyboardHook, MouseHook mouseHook, MonitorCallback monitorCallback)
+	version (Windows)
 	{
-		super(&run);
+		this(Connections connections, KeyboardHook keyboardHook, MouseHook mouseHook, MonitorCallback monitorCallback)
+		{
+			this.connections     = connections;
+			this.keyboardHook    = keyboardHook;
+			this.mouseHook       = mouseHook;
+			this.monitorCallback = monitorCallback;
 
-		this.connections     = connections;
-		this.keyboardHook    = keyboardHook;
-		this.mouseHook       = mouseHook;
-		this.monitorCallback = monitorCallback;
+			super(&run);
+		}
+	}
+	else
+	{
+		this(Connections connections)
+		{
+			this.connections = connections;
+			super(&run);
+		}
 	}
 
 	~this()
