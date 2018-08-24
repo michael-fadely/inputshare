@@ -64,7 +64,8 @@ void moveCursor(int dx, int dy)
 	}
 	else version (Posix)
 	{
-		static assert(false, "TODO");
+		// TODO: this should probably be made a class or something to manage the xdo handle
+		xdo_move_mouse_relative(/* TODO: handle */ null, dx, dy);
 	}
 	else
 	{
@@ -87,7 +88,7 @@ void setCursorPosition(int x, int y, int width, int height) nothrow
 	}
 	else version (Posix)
 	{
-		static assert(false, "TODO");
+		xdo_move_mouse(/* TODO: handle*/ null, x, y, /* TODO: screen number? */ 0);
 	}
 	else
 	{
