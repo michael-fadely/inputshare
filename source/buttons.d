@@ -2,7 +2,7 @@ module buttons;
 
 version (Windows)
 {
-	 import core.sys.windows.windows;
+	import core.sys.windows.windows;
 }
 else version (Posix)
 {
