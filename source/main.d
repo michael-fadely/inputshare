@@ -106,6 +106,11 @@ int main(string[] args)
 		{
 			throw new Exception("You can't be the server and the client!");
 		}
+
+		if (isClient && address.empty)
+		{
+			throw new Exception("You must specify an address to connect to with --address or -a");
+		}
 	}
 	catch (Exception ex)
 	{
