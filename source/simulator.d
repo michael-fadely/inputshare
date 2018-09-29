@@ -51,32 +51,38 @@ class Simulator
 	version (Posix) xdo_t* handle;
 
 public:
-	this()
+	version (Posix)
 	{
-		handle = xdo_new(null);
-	}
-	~this()
-	{
-		xdo_free(handle);
-	}
-
-	Vector2!int getMousePosition()
-	{
-		Vector2!int result;
-		int screen_num;
-		xdo_get_mouse_location(handle, &result.x, &result.y, &screen_num);
-		return result;
+		this()
+		{
+			handle = xdo_new(null);
+		}
+		~this()
+		{
+			xdo_free(handle);
+		}
 	}
 
-	Vector2!uint getScreenDimensions()
+	version (Posix)
 	{
-		Vector2!int cursor;
-		int screen_num;
-		xdo_get_mouse_location(handle, &cursor.x, &cursor.y, &screen_num);
+		Vector2!int getMousePosition()
+		{
+			Vector2!int result;
+			int screen_num;
+			xdo_get_mouse_location(handle, &result.x, &result.y, &screen_num);
+			return result;
+		}
 
-		Vector2!uint result;
-		xdo_get_viewport_dimensions(handle, &result.x, &result.y, screen_num);
-		return result;
+		Vector2!uint getScreenDimensions()
+		{
+			Vector2!int cursor;
+			int screen_num;
+			xdo_get_mouse_location(handle, &cursor.x, &cursor.y, &screen_num);
+
+			Vector2!uint result;
+			xdo_get_viewport_dimensions(handle, &result.x, &result.y, screen_num);
+			return result;
+		}
 	}
 
 	void moveCursor(int dx, int dy)
