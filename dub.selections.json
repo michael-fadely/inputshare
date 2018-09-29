@@ -1,7 +1,0 @@
-{
-	"fileVersion": 1,
-	"versions": {
-		"libxdo-d": "1.0.1",
-		"x11": "1.0.21"
-	}
-}
