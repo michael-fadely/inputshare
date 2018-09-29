@@ -9,16 +9,30 @@ debug import std.stdio;
 
 import buttons;
 import connection;
-import util;
+import vector;
+import simulator;
+
+version (Windows)
+{
+	import core.sys.windows.windows;
+}
+else version (Posix)
+{
+	import x11.Xlib;
+}
+else
+{
+	static assert("Platform not supported.");
+}
 
 /// Number of pixels from the screen edge before forwarding input.
 enum MARGIN = 8;
 
-version (Windows) import core.sys.windows.windows;
-
 class Listener : Thread
 {
 private:
+	Simulator simulator;
+
 	Connections connections;
 
 	bool isSending;
@@ -51,6 +65,8 @@ public:
 	{
 		this(Connections connections, KeyboardHook keyboardHook, MouseHook mouseHook, MonitorCallback monitorCallback)
 		{
+			simulator = new Simulator();
+
 			this.connections     = connections;
 			this.keyboardHook    = keyboardHook;
 			this.mouseHook       = mouseHook;
@@ -63,6 +79,7 @@ public:
 	{
 		this(Connections connections)
 		{
+			simulator = new Simulator();
 			this.connections = connections;
 			super(&run);
 		}
@@ -107,28 +124,28 @@ public:
 				case WM_KEYDOWN:
 					if (isSending)
 					{
-						connections.button(true, fromNative(keyboard.vkCode));
+						connections.button(true, toVirtual(keyboard.vkCode));
 					}
 					break;
 
 				case WM_KEYUP:
 					if (isSending)
 					{
-						connections.button(false, fromNative(keyboard.vkCode));
+						connections.button(false, toVirtual(keyboard.vkCode));
 					}
 					break;
 
 				case WM_SYSKEYDOWN:
 					if (isSending)
 					{
-						connections.button(true, fromNative(keyboard.vkCode));
+						connections.button(true, toVirtual(keyboard.vkCode));
 					}
 					break;
 
 				case WM_SYSKEYUP:
 					if (isSending)
 					{
-						connections.button(false, fromNative(keyboard.vkCode));
+						connections.button(false, toVirtual(keyboard.vkCode));
 					}
 					break;
 			}
@@ -269,8 +286,8 @@ public:
 		BOOL screenRatioFromCursor(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) nothrow
 		{
 			// If the cursor is within the bounds of this monitor...
-			if ((mouse.x >= lprcMonitor.left && mouse.x < lprcMonitor.right)
-					&& (mouse.y >= lprcMonitor.top && mouse.y < lprcMonitor.bottom))
+			if ((mouse.x >= lprcMonitor.left && mouse.x < lprcMonitor.right) &&
+			    (mouse.y >= lprcMonitor.top && mouse.y < lprcMonitor.bottom))
 			{
 				// Give the calling function the handle and stop enumeration.
 				if (dwData != 0) // NULL
@@ -295,10 +312,25 @@ public:
 				return TRUE;
 			}
 		}
+	}
 
-		auto getScreenRatio()
+	auto getScreenRatio()
+	{
+		version (Windows)
 		{
 			return EnumDisplayMonitors(null, null, monitorCallback, cast(LPARAM)&screenRatio);
+		}
+		else version (Posix)
+		{
+			auto position = simulator.getMousePosition();
+			auto dimensions = simulator.getScreenDimensions();
+
+			screenRatio.x = cast(double)position.x / cast(double)dimensions.x;
+			screenRatio.y = cast(double)position.y / cast(double)dimensions.y;
+		}
+		else
+		{
+			static assert("Platform not supported.");
 		}
 	}
 
@@ -325,11 +357,11 @@ private:
 
 		if (message.button.isMouse())
 		{
-			pressMouseButton(message.button, pressed);
+			simulator.pressMouseButton(message.button, pressed);
 		}
 		else
 		{
-			pressKeyboardButton(message.button, pressed);
+			simulator.pressKeyboardButton(message.button, pressed);
 		}
 	}
 
@@ -360,7 +392,7 @@ private:
 			y += margin;
 		}
 
-		setCursorPosition(x, y, screenWidth, screenHeight);
+		simulator.setCursorPosition(x, y, screenWidth, screenHeight);
 	}
 
 	void run()
@@ -431,19 +463,19 @@ private:
 						break;
 
 					case MouseSet:
-						setCursorPosition(message.mouse.x, message.mouse.y, screenWidth, screenHeight);
+						simulator.setCursorPosition(message.mouse.x, message.mouse.y, screenWidth, screenHeight);
 						break;
 
 					case MouseMove:
-						moveCursor(message.mouse.x, message.mouse.y);
+						simulator.moveCursor(message.mouse.x, message.mouse.y);
 						break;
 
 					case ScrollVertical:
-						scrollMouseWheel(message.wheel, false);
+						simulator.scrollMouseWheel(message.wheel, false);
 						break;
 
 					case ScrollHorizontal:
-						scrollMouseWheel(message.wheel, true);
+						simulator.scrollMouseWheel(message.wheel, true);
 						break;
 
 					default:
@@ -456,6 +488,8 @@ private:
 			super.yield();
 			super.sleep(1.msecs);
 		}
+
+		simulator.destroy();
 
 		version (Windows)
 		{

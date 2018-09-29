@@ -9,11 +9,12 @@ import core.time;
 
 debug import std.stdio : stdout, stderr;
 
-import util;
 import buttons;
 import listener;
 import packet;
 import socket;
+import vector;
+import simulator;
 
 enum MessageType : ubyte
 {
