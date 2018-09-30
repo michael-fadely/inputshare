@@ -125,6 +125,7 @@ public:
 					if (isSending)
 					{
 						connections.button(true, toVirtual(keyboard.vkCode));
+						connections.finalize();
 					}
 					break;
 
@@ -132,6 +133,7 @@ public:
 					if (isSending)
 					{
 						connections.button(false, toVirtual(keyboard.vkCode));
+						connections.finalize();
 					}
 					break;
 
@@ -139,6 +141,7 @@ public:
 					if (isSending)
 					{
 						connections.button(true, toVirtual(keyboard.vkCode));
+						connections.finalize();
 					}
 					break;
 
@@ -146,6 +149,7 @@ public:
 					if (isSending)
 					{
 						connections.button(false, toVirtual(keyboard.vkCode));
+						connections.finalize();
 					}
 					break;
 			}
