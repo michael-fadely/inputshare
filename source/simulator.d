@@ -222,8 +222,14 @@ public:
 		}
 		else version (Posix)
 		{
-			// TODO: fix - this is wrong
-			xdo_click_window_multiple(handle, CURRENTWINDOW, horizontal ? 5 : 4, cast(int)amount, 0);
+			if (amount < 0)
+			{
+				xdo_click_window_multiple(handle, CURRENTWINDOW, 5, (-cast(int)amount) >> 4, 0);
+			}
+			else
+			{
+				xdo_click_window_multiple(handle, CURRENTWINDOW, 4, (cast(int)amount) >> 4, 0);
+			}
 		}
 		else
 		{
