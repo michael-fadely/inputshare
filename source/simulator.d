@@ -249,13 +249,13 @@ public:
 			case '0': .. case '9':
 				return to!string(posixButton);
 
-			case XK_3270_Attn:         return "3270_Attn";
-			case XK_3270_CursorSelect: return "3270_CursorSelect";
-			case XK_3270_EraseEOF:     return "3270_EraseEOF";
-			case XK_3270_ExSelect:     return "3270_ExSelect";
-			case XK_3270_PA1:          return "3270_PA1";
-			case XK_3270_Play:         return "3270_Play";
-			case XK_3270_PrintScreen:  return "3270_PrintScreen";
+			case XK_3270_Attn:         return "Attn";
+			case XK_3270_CursorSelect: return "CursorSelect";
+			case XK_3270_EraseEOF:     return "EraseEOF";
+			case XK_3270_ExSelect:     return "ExSelect";
+			case XK_3270_PA1:          return "PA1";
+			case XK_3270_Play:         return "Play";
+			case XK_3270_PrintScreen:  return "PrintScreen";
 			case XK_asciitilde:        return "asciitilde";
 			case XK_backslash:         return "backslash";
 			case XK_BackSpace:         return "BackSpace";
