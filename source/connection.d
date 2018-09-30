@@ -31,18 +31,18 @@ enum MessageType : ubyte
 
 struct Message
 {
-	MessageType type;
-	VirtualButton button;
-	Direction direction;
-	Vector2!int mouse;
+	MessageType    type;
+	VirtualButton  button;
+	Direction      direction;
+	Vector2!int    mouse;
 	Vector2!double mouseRatio;
-	short wheel;
+	short          wheel;
 }
 
 class Connections
 {
 private:
-	Object sync   = new Object();
+	Object sync = new Object();
 	SocketSet set = new SocketSet();
 	Packet packet = new Packet();
 	Socket[] sockets;
@@ -215,93 +215,90 @@ public:
 		}
 	}
 
-	Generator!(Message) read()
+	void read(void delegate(ref in Message) dg)
 	{
 		synchronized (sync)
 		{
-			return new Generator!(Message)(
+			if (sockets.empty)
 			{
-				if (sockets.empty)
+				return;
+			}
+
+			sockets.each!(x => set.add(x));
+			Socket.select(set, null, null, 1.msecs);
+		
+			Socket[] failed;
+
+			foreach (socket; sockets)
+			{
+				if (!set.isSet(socket))
 				{
-					return;
+					continue;
 				}
 
-				sockets.each!(x => set.add(x));
-				Socket.select(set, null, null, 1.msecs);
-			
-				Socket[] failed;
+				MessageType type;
 
-				foreach (socket; sockets)
+			read_loop:
+				for (ptrdiff_t n = socket.read(type); n != 0; n = socket.read(type))
 				{
-					if (!set.isSet(socket))
+					if (n == Socket.ERROR)
 					{
-						continue;
+						debug stdout.writeln("error");
+						failed ~= socket;
+						break;
 					}
 
-					MessageType type;
-
-				read_loop:
-					for (ptrdiff_t n = socket.read(type); n != 0; n = socket.read(type))
+					if (!n)
 					{
-						if (n == Socket.ERROR)
-						{
-							debug stdout.writeln("error");
-							failed ~= socket;
-							break;
-						}
-
-						if (!n)
-						{
-							debug stdout.writeln("!n");
-							break;
-						}
-
-						Message message;
-						message.type = type;
-
-						switch (message.type) with (MessageType)
-						{
-							case TakeControl:
-							case GiveControl:
-								socket.read(message.direction);
-								socket.read(message.mouseRatio.x);
-								socket.read(message.mouseRatio.y);
-								break;
-
-							case ButtonDown:
-							case ButtonUp:
-								socket.read(message.button);
-								break;
-
-							case MouseMove:
-							case MouseSet:
-								socket.read(message.mouse.x);
-								socket.read(message.mouse.y);
-								break;
-
-							case ScrollVertical:
-							case ScrollHorizontal:
-								socket.read(message.wheel);
-								break;
-
-							default:
-								debug stdout.writeln("default");
-								break read_loop;
-						}
-
-						//debug stdout.writeln("Received message type: ", type);
-						yield(message);
+						debug stdout.writeln("!n");
+						break;
 					}
-				}
 
-				foreach (socket; failed)
-				{
-					debug stdout.writeln("Lost connection to some sockets or something");
+					Message message;
+					message.type = type;
 
-					socket.disconnect();
-					sockets = sockets.remove!(x => x is socket);
+					switch (message.type) with (MessageType)
+					{
+						case TakeControl:
+						case GiveControl:
+							socket.read(message.direction);
+							socket.read(message.mouseRatio.x);
+							socket.read(message.mouseRatio.y);
+							break;
+
+						case ButtonDown:
+						case ButtonUp:
+							socket.read(message.button);
+							break;
+
+						case MouseMove:
+						case MouseSet:
+							socket.read(message.mouse.x);
+							socket.read(message.mouse.y);
+							break;
+
+						case ScrollVertical:
+						case ScrollHorizontal:
+							socket.read(message.wheel);
+							break;
+
+						default:
+							debug stdout.writeln("default");
+							break read_loop;
+					}
+
+					//debug stdout.writeln("Received message type: ", type);
+					dg(message);
 				}
-			});
+			}
+
+			foreach (socket; failed)
+			{
+				debug stdout.writeln("Lost connection to some sockets or something");
+
+				socket.disconnect();
+				sockets = sockets.remove!(x => x is socket);
+			}
 		}
 	}
 }

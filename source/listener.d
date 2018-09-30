@@ -444,7 +444,7 @@ private:
 
 			simulating = true;
 
-			foreach (Message message; connections.read())
+			connections.read((ref in Message message)
 			{
 				switch (message.type) with (MessageType)
 				{
@@ -487,7 +487,7 @@ private:
 						debug stderr.writeln("unknown message type???");
 						break;
 				}
-			}
+			});
 
 			simulating = false;
 
