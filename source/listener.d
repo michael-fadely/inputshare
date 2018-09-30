@@ -351,7 +351,7 @@ private:
 		return ((x > (screenWidth - margin)) || (x < margin));
 	}
 
-	void pressButton(in Message message) nothrow
+	void pressButton(in Message message)
 	{
 		bool pressed = (message.type == MessageType.ButtonDown);
 
@@ -439,6 +439,7 @@ private:
 			getScreenRatio();
 
 			simulating = true;
+
 			foreach (Message message; connections.read())
 			{
 				switch (message.type) with (MessageType)
@@ -483,6 +484,7 @@ private:
 						break;
 				}
 			}
+
 			simulating = false;
 
 			super.yield();

@@ -15,7 +15,8 @@
 			"dependencies": {
 				"libxdo-d": "~>1.0.0"
 			},
-			"platforms": [ "linux" ]
+			"platforms": [ "linux" ],
+			"targetType": "executable"
 		}
 	]
 }
