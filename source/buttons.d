@@ -6,10 +6,6 @@ version (Windows)
 }
 else version (Posix)
 {
-	const int XK_leftarrow                     = 0x08fb;  /* U+2190 LEFTWARDS ARROW */
-	const int XK_uparrow                       = 0x08fc;  /* U+2191 UPWARDS ARROW */
-	const int XK_rightarrow                    = 0x08fd;  /* U+2192 RIGHTWARDS ARROW */
-	const int XK_downarrow                     = 0x08fe;  /* U+2193 DOWNWARDS ARROW */
 	const int XK_3270_Duplicate                = 0xfd01;
 	const int XK_3270_FieldMark                = 0xfd02;
 	const int XK_3270_Right2                   = 0xfd03;
@@ -214,7 +210,18 @@ int toNative(VirtualButton button) nothrow
 				return XK_VoidSymbol;
 
 			case 'A': .. case 'Z':
-				return button;
+				return button | 0x20; // converts to lowercase ascii
+
+			case '0': return XK_0;
+			case '1': return XK_1;
+			case '2': return XK_2;
+			case '3': return XK_3;
+			case '4': return XK_4;
+			case '5': return XK_5;
+			case '6': return XK_6;
+			case '7': return XK_7;
+			case '8': return XK_8;
+			case '9': return XK_9;
 				
 			case VK_LBUTTON:
 			case VK_RBUTTON:
@@ -238,7 +245,10 @@ int toNative(VirtualButton button) nothrow
 			case VK_CONTROL:
 				return XK_Control_L; // TODO?
 			case VK_MENU:
-				return XK_Menu;
+			case VK_LMENU:
+				return XK_Alt_L;
+			case VK_RMENU:
+				return XK_Alt_R;
 			case VK_PAUSE:
 				return XK_Pause;
 			case VK_CAPITAL:
@@ -273,13 +283,13 @@ int toNative(VirtualButton button) nothrow
 			case VK_HOME:
 				return XK_Home;
 			case VK_LEFT:
-				return XK_leftarrow;
+				return XK_Left;
 			case VK_UP:
-				return XK_uparrow;
+				return XK_Up;
 			case VK_RIGHT:
-				return XK_rightarrow;
+				return XK_Right;
 			case VK_DOWN:
-				return XK_downarrow;
+				return XK_Down;
 			case VK_SELECT:
 				return XK_Select;
 			case VK_PRINT:
@@ -300,6 +310,7 @@ int toNative(VirtualButton button) nothrow
 				return XK_Super_R;
 			
 			case VK_APPS:
+				return XK_Menu;
 			case VK_SLEEP:
 				return button; // TODO
 			case VK_NUMPAD0:
@@ -394,9 +405,6 @@ int toNative(VirtualButton button) nothrow
 				return XK_Control_L;
 			case VK_RCONTROL:
 				return XK_Control_R;
-			case VK_LMENU:
-			case VK_RMENU:
-				return XK_Menu; // TODO
 
 			case VK_BROWSER_BACK:
 			case VK_BROWSER_FORWARD:
@@ -423,7 +431,7 @@ int toNative(VirtualButton button) nothrow
 			case VK_OEM_1:
 				return XK_semicolon;
 			case VK_OEM_PLUS:
-				return XK_plus;
+				return XK_equal;
 			case VK_OEM_COMMA:
 				return XK_comma;
 			case VK_OEM_MINUS:
@@ -431,9 +439,9 @@ int toNative(VirtualButton button) nothrow
 			case VK_OEM_PERIOD:
 				return XK_period;
 			case VK_OEM_2:
-				return XK_question;
+				return XK_slash;
 			case VK_OEM_3:
-				return XK_asciitilde;
+				return XK_grave;
 			case VK_OEM_4:
 				return XK_bracketleft;
 			case VK_OEM_5:
@@ -441,7 +449,7 @@ int toNative(VirtualButton button) nothrow
 			case VK_OEM_6:
 				return XK_bracketright;
 			case VK_OEM_7:
-				return XK_quotedbl;
+				return XK_apostrophe;
 			case VK_OEM_8:
 				return button;
 			case VK_OEM_102:
@@ -488,6 +496,17 @@ VirtualButton toVirtual(int vcode) nothrow
 			default:
 				return vcode;
 
+			case XK_0: return '0';
+			case XK_1: return '1';
+			case XK_2: return '2';
+			case XK_3: return '3';
+			case XK_4: return '4';
+			case XK_5: return '5';
+			case XK_6: return '6';
+			case XK_7: return '7';
+			case XK_8: return '8';
+			case XK_9: return '9';
+
 			case XK_Cancel:
 				return VK_CANCEL;
 			case XK_BackSpace:
@@ -498,8 +517,12 @@ VirtualButton toVirtual(int vcode) nothrow
 				return VK_CLEAR;
 			case XK_Return:
 				return VK_RETURN;
+			case XK_Alt_L:
+				return VK_LMENU;
+			case XK_Alt_R:
+				return VK_RMENU;
 			case XK_Menu:
-				return VK_MENU;
+				return VK_APPS;
 			case XK_Pause:
 				return VK_PAUSE;
 			case XK_Caps_Lock:
@@ -523,13 +546,13 @@ VirtualButton toVirtual(int vcode) nothrow
 				return VK_END;
 			case XK_Home:
 				return VK_HOME;
-			case XK_leftarrow:
+			case XK_Left:
 				return VK_LEFT;
-			case XK_uparrow:
+			case XK_Up:
 				return VK_UP;
-			case XK_rightarrow:
+			case XK_Right:
 				return VK_RIGHT;
-			case XK_downarrow:
+			case XK_Down:
 				return VK_DOWN;
 			case XK_Select:
 				return VK_SELECT;
@@ -644,7 +667,7 @@ VirtualButton toVirtual(int vcode) nothrow
 				return VK_RCONTROL;
 			case XK_semicolon:
 				return VK_OEM_1;
-			case XK_plus:
+			case XK_equal:
 				return VK_OEM_PLUS;
 			case XK_comma:
 				return VK_OEM_COMMA;
@@ -652,9 +675,9 @@ VirtualButton toVirtual(int vcode) nothrow
 				return VK_OEM_MINUS;
 			case XK_period:
 				return VK_OEM_PERIOD;
-			case XK_question:
+			case XK_slash:
 				return VK_OEM_2;
-			case XK_asciitilde:
+			case XK_grave:
 				return VK_OEM_3;
 			case XK_bracketleft:
 				return VK_OEM_4;
