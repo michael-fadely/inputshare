@@ -43,11 +43,16 @@ class Connections
 {
 private:
 	Object sync = new Object();
-	SocketSet set = new SocketSet();
+	SocketSet set;
 	Packet packet = new Packet();
 	Socket[] sockets;
 
 public:
+	this()
+	{
+		set = new SocketSet();
+	}
+
 	@property auto count() const { synchronized (sync) return sockets.length; }
 
 	void add(Socket socket)
