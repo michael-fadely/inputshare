@@ -79,22 +79,22 @@ int main(string[] args)
 	try
 	{
 		auto help = getopt(args,
-			"h|host",
-			"Host an input share server.",
-			&isServer,
+		                   "h|host",
+		                   "Host an input share server.",
+		                   &isServer,
 
-			"c|connect",
-			"Connect to an input share server.",
-			&isClient,
-			
-			"a|address",
-			"Address to connect to.",
-			&address,
-			
-			"p|port",
-			"Port to host on or connect on.",
-			&port
-		);
+		                   "c|connect",
+		                   "Connect to an input share server.",
+		                   &isClient,
+		                   
+		                   "a|address",
+		                   "Address to connect to.",
+		                   &address,
+		                   
+		                   "p|port",
+		                   "Port to host on or connect on.",
+		                   &port
+		                   );
 
 		if (help.helpWanted)
 		{
@@ -232,5 +232,5 @@ int main(string[] args)
 		return -1;
 	}
 
-	return 0;
+	//return 0;
 }
