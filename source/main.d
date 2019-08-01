@@ -231,4 +231,6 @@ int main(string[] args)
 		stderr.writeln(ex.msg);
 		return -1;
 	}
+
+	return 0;
 }
